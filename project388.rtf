@@ -1,0 +1,205 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf500
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red38\green38\blue38;\red255\green255\blue255;
+}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c20000\c20000\c20000;\cssrgb\c100000\c100000\c100000;
+}
+\margl1440\margr1440\vieww14760\viewh14100\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs28 \cf2 \expnd0\expndtw0\kerning0
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\fs24 \cf2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%\
+%%%   Make the Data\
+%%%     \
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+    \
+nrow = 60; dimN = 50;  Nsamples = 50; K = 4; \
+\
+patch = 20*ones(28, 20);\
+background = zeros(nrow, dimN);\
+   seed = 13579;   \
+   BigPrime = (2^31)-1;\
+      \
+Xmat = zeros(nrow*dimN,Nsamples);\
+\
+index = 1;\
+    \
+    \
+ for corner1 = 4:8\
+     for corner2 = 4:8\
+         \
+         for jj = 1:nrow\
+            for kk = 1:dimN\
+                seed = mod(16807*seed,BigPrime);\
+                background(jj,kk) = 4*( seed/BigPrime );\
+            end\
+         end\
+         picture = background; \
+         picture([(corner1):(corner1+27)],[corner2:corner2+19]) = patch;\
+         \
+         Xmat(:,index) = reshape(picture,nrow*dimN,1);\
+         index = index + 1;\
+     end     \
+ end\
+    \
+for corner1 = 26:30\
+    for corner2 = 26:30\
+                \
+         for jj = 1:nrow\
+            for kk = 1:dimN\
+                seed = mod(16807*seed,BigPrime);\
+                background(jj,kk) = 4*( seed/BigPrime );\
+            end\
+         end\
+        picture = background; \
+        picture([(corner1):(corner1+27)],[corner2:corner2+19]) = patch;\
+         \
+        Xmat(:,index) = reshape(picture,nrow*dimN,1);\
+        index = index + 1;\
+    end  \
+end\
+    \
+\
+        \
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%        Step 1 of the Algorithm\
+%%% Find the distance between each pair of data points x_j and x_k\
+%%% For each data point, find its K nearest neighbours\
+%%%\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+\
+\
+\
+%%%%%%%%     Write your own code here\
+%%%\
+%%% each column stores the K nearest neighbours for that data point\
+%%%%\
+M = zeros(nrow*dimN,Nsamples);\
+Xnorm = zeros(2,Nsamples);\
+XnormT = zeros(Nsamples,2);\
+Xnormsorted = sort(Xnorm);\
+Xnhbr = zeros(K,Nsamples);\
+Xnhbrindex = zeros(K,Nsamples);\
+\
+\
+%loop\
+for i = 1: Nsamples\
+    for j = 1: Nsamples\
+      \
+%Computing the  difference\
+    M(:,j) = Xmat(:,i) - Xmat(:,j);\
+    Xnorm(1,j) = j;\
+    Xnorm(2,j) = norm(M(:,j));\
+    XnormT = Xnorm.';\
+    XnormT = sortrows(XnormT,2);\
+    Xnormsorted = XnormT.';\
+    Xnhbr(:,i) = Xnormsorted(2,2:5).';\
+    Xnhbrindex(:,i) = Xnormsorted(1,2:5).';\
+    j = j+1;\
+    end\
+ i=i+1;\
+end\
+\
+\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%\
+%%%    Step 2 of the Algorithm\
+%%% Solve for the weights for each data point\
+%%%\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+\
+\
+            \
+    %%%     Write your own code here\
+    %%% \
+G=zeros(K,K);\
+W=zeros(K,Nsamples);\
+w=zeros(K,Nsamples);                        %(weighted)\
+\
+\
+%loop\
+  for i = 1: Nsamples     \
+       \
+      for j= 1 : K            \
+           \
+          for k = 1 : K        \
+\
+    %Grand MAtrix\
+    G(j,k)=dot((Xmat(:,i)- Xmat(:,Xnhbrindex(j,i))),(Xmat(:,i)-Xmat(:,Xnhbrindex(k,i))));\
+    %w for the sample x\
+    W(:,i)= inv(G)*[1;1;1;1];\
+     k=k+1;\
+          \
+          end\
+   j=j+1;\
+      \
+      end\
+    i=i+1;\
+  \
+  end\
+%Rescale w so entries a upto 1\
+for i = 1 : Nsamples\
+    for j = 1 : K \
+        w(j,i)= W(j,i)/(sum(W(:,i)));\
+        j= j+1;\
+    end \
+    i = i + 1;\
+end\
+\
+\
+\
+\
+\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%\
+%%%       Step 3 of the Algorithm\
+%%%  Compute the M matrix, call it M_mat\
+%%%\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%%%  Write your own code here\
+w2 = zeros(Nsamples,Nsamples);     \
+M_mat= zeros(K,Nsamples);\
+I = eye(K,K);\
+\
+M_mat = (transpose(I - w2)) * (I - w2);\
+%loop\
+for j = 1: Nsamples\
+    for i = 1 : K\
+        index = M(i,j);\
+        w2(j,index) = w( i, j);\
+    end\
+end\
+\
+        \
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%%\
+%%%% compute the eigenvectors of the matrix M_mat\
+%%%%\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+[V, D] = eig(M_mat);\
+\
+%%% if the two smallest eigenvalues are both zero,\
+%%% then use the eigenvectors in the third and fourth column of matrix V.\
+x_axis = V([1:Nsamples],4);\
+y_axis = V([1:Nsamples],5);\
+\
+\
+scatter(x_axis, y_axis)\
+\
+\
+\
+\
+\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+%%%%\
+%%%%   Verify that the calculation of matrix M_mat is done correctly.\
+%%%%\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\
+\
+%%%%% write your own code here}
